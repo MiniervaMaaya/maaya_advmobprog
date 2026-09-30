@@ -1,21 +1,27 @@
 import 'package:flutter/material.dart';
 
+import '../utils/constants.dart';
+
 class CustomText extends StatelessWidget {
   final String text;
-  final double fontSize;
-  final FontWeight fontWeight;
-  const CustomText({
-    Key? key,
-    required this.text,
-    this.fontSize = 14,
-    this.fontWeight = FontWeight.normal,
-  }) : super(key: key);
+  final TextStyle style;
+  final int? maxLines;
+  final TextAlign textAlign;
+
+  const CustomText(
+    this.text, {
+    super.key,
+    this.style = AppTextStyles.bodyMedium,
+    this.maxLines,
+    this.textAlign = TextAlign.start,
+  });
 
   @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: TextStyle(fontSize: fontSize, fontWeight: fontWeight),
-    );
-  }
+  Widget build(BuildContext context) => Text(
+    text,
+    style: style,
+    maxLines: maxLines,
+    overflow: maxLines == null ? null : TextOverflow.ellipsis,
+    textAlign: textAlign,
+  );
 }

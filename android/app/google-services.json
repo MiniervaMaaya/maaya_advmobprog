@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "316398588632",
+    "project_id": "maaya-advmobile-2026",
+    "storage_bucket": "maaya-advmobile-2026.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:316398588632:android:3e958d217d508bce17fdad",
+        "android_client_info": {
+          "package_name": "com.example.maaya_advmobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDfNr5a7YOjS7jSgClv8tTU3pHo6F6LBeE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

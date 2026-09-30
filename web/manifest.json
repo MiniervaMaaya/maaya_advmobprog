@@ -1,6 +1,6 @@
 {
-    "name": "maaya_advmobprog",
-    "short_name": "maaya_advmobprog",
+    "name": "maaya_advmobile",
+    "short_name": "maaya_advmobile",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

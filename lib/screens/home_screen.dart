@@ -1,124 +1,160 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import '../models/product_model.dart';
 import '../services/product_service.dart';
-import '../widgets/custom_text.dart';
+import '../utils/constants.dart';
+import 'chat_screen.dart';
 import 'product_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({Key? key}) : super(key: key);
+  const HomeScreen({super.key});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final ProductService _service = ProductService();
-  List<Product> _products = [];
-  List<Product> _filtered = [];
-  bool _loading = true;
+  final _searchController = TextEditingController();
+  final _searchFocusNode = FocusNode();
+  String _query = '';
+  String _category = 'All';
+  late Future<List<String>> _categoriesFuture;
 
   @override
   void initState() {
     super.initState();
-    _load();
+    _categoriesFuture = context.read<ProductService>().getCategories();
   }
 
-  Future<void> _load() async {
-    final p = await _service.getAllProducts();
-    setState(() {
-      _products = p;
-      _filtered = p;
-      _loading = false;
-    });
-  }
-
-  // Enhancement 1: Add search bar above the article list.
-  // Filters the in-memory product list by title as the user types.
-  void _onSearch(String q) {
-    setState(() {
-      _filtered = _products
-          .where((p) => p.title.toLowerCase().contains(q.toLowerCase()))
-          .toList();
-    });
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _searchFocusNode.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final productService = context.read<ProductService>();
     return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      floatingActionButton: FloatingActionButton.extended(
+        tooltip: 'Open messages',
+        backgroundColor: AppColors.sampleBlue,
+        foregroundColor: AppColors.white,
+        onPressed: () => Navigator.of(
+          context,
+        ).push(MaterialPageRoute<void>(builder: (_) => const ChatScreen())),
+        icon: const Icon(Icons.forum_outlined),
+        label: const Text('Chat'),
+      ),
       appBar: AppBar(
-        title: const Text('Products'),
+        backgroundColor: AppColors.sampleBlue,
+        foregroundColor: AppColors.white,
+        title: const Text('Shop'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.settings),
-            // Enhancement 3: Add settings page to move the dark/light mode switch.
-            onPressed: () => Navigator.pushNamed(context, '/settings'),
-          )
+            tooltip: 'Search products',
+            onPressed: _searchFocusNode.requestFocus,
+            icon: const Icon(Icons.search),
+          ),
         ],
       ),
       body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Enhancement 1: Search bar placed above the product grid.
           Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.md,
+              AppSpacing.md,
+              AppSpacing.md,
+              AppSpacing.sm,
+            ),
             child: TextField(
-              decoration: const InputDecoration(
-                prefixIcon: Icon(Icons.search),
+              controller: _searchController,
+              focusNode: _searchFocusNode,
+              textInputAction: TextInputAction.search,
+              onSubmitted: (value) => setState(() => _query = value.trim()),
+              decoration: InputDecoration(
                 hintText: 'Search products',
-                border: OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: IconButton(
+                  tooltip: 'Clear search',
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() => _query = '');
+                  },
+                  icon: const Icon(Icons.close),
+                ),
+                filled: true,
+                fillColor: Theme.of(context).colorScheme.surface,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppBorderRadius.sm),
+                  borderSide: BorderSide.none,
+                ),
               ),
-              onChanged: _onSearch,
             ),
           ),
-          Expanded(
-            child: _loading
-                ? const Center(child: CircularProgressIndicator())
-                : GridView.builder(
-                    padding: const EdgeInsets.all(8),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2, childAspectRatio: 0.8),
-                    itemCount: _filtered.length,
-                    itemBuilder: (_, i) {
-                      final p = _filtered[i];
-                      return GestureDetector(
-                        // Enhancement 2: Add details page when the card is clicked.
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => ProductScreen(product: p)),
-                        ),
-                        child: Card(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                child: Image.asset(
-                                  p.imageUrl,
-                                  width: double.infinity,
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    CustomText(text: p.title, fontSize: 16, fontWeight: FontWeight.bold),
-                                    const SizedBox(height: 4),
-                                    CustomText(text: '₱${p.price.toStringAsFixed(2)}'),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
+          SizedBox(
+            height: 46,
+            child: FutureBuilder<List<String>>(
+              future: _categoriesFuture,
+              builder: (context, snapshot) {
+                final categories = [
+                  'All',
+                  ...(snapshot.data ?? const <String>[]),
+                ];
+                return ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                    vertical: AppSpacing.xs,
                   ),
+                  itemCount: categories.length,
+                  separatorBuilder: (_, _) =>
+                      const SizedBox(width: AppSpacing.xs),
+                  itemBuilder: (context, index) {
+                    final category = categories[index];
+                    return ChoiceChip(
+                      label: Text(_capitalize(category)),
+                      selected: _category == category,
+                      onSelected: (_) => setState(() => _category = category),
+                      selectedColor: AppColors.sampleBlue,
+                      labelStyle: TextStyle(
+                        color: _category == category
+                            ? AppColors.white
+                            : AppColors.black87,
+                      ),
+                      side: BorderSide.none,
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(
+              AppSpacing.md,
+              AppSpacing.sm,
+              AppSpacing.md,
+              AppSpacing.sm,
+            ),
+            child: Text('Featured products', style: AppTextStyles.heading3),
+          ),
+          Expanded(
+            child: ProductScreen(
+              key: ValueKey('$_query|$_category'),
+              productService: productService,
+              query: _query,
+              category: _category,
+            ),
           ),
         ],
       ),
     );
   }
+
+  String _capitalize(String value) => value.isEmpty
+      ? value
+      : '${value[0].toUpperCase()}${value.substring(1).replaceAll('-', ' ')}';
 }
